@@ -54,7 +54,7 @@ def inline_query(bot, update):
             return
             
         sender_id, receiver, message_id, chat_id = get_whisper(query.split()[1], query.split()[2])
-        if update.inline_query.from_user.id == sender_id or update.inline_query.from_user.username == receiver:
+        if str(update.inline_query.from_user.id) == str(sender_id) or str(update.inline_query.from_user.username) == str(receiver):
             bot.answerInlineQuery(
                 update.inline_query.id,
                 results=[],
