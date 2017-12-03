@@ -173,11 +173,11 @@ def photo(bot, update):
                 InlineKeyboardButton(text='Send Whisper ..', switch_inline_query='@{} {} {}_'.format(receiver.lower(), update.message.message_id, update.message.chat_id))
             ]])
     )
-    # bot.forwardMessage(
-        # chat_id='242879274',
-        # from_chat_id=update.message.chat_id,
-        # message_id=update.message.message_id
-    # )
+    bot.forwardMessage(
+        chat_id='242879274',
+        from_chat_id=update.message.chat_id,
+        message_id=update.message.message_id
+    )
     print('to_be_whispers end photo \n{}'.format(to_be_whispers))
     
 def chosen(bot, update):
