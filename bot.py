@@ -10,14 +10,34 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 token = os.environ['TELEGRAM_TOKEN']
 
+
+#----------- SETUP POSTGRESQL CONNECTION
+from urllib import parse
+import psycopg2
+
+parse.uses_netloc.append("postgres")
+url = parse.urlparse(os.environ["DATABASE_URL"])
+
+conn = psycopg2.connect(
+    database=url.path[1:],
+    user=url.username,
+    password=url.password,
+    host=url.hostname,
+    port=url.port
+)
+c = conn.cursor()
+#-------------------
+
+
+
 temp = {}
 to_be_whispers = {}
 whispers = []
 
 def get_whisper(m_id, c_id):
-    for sender_id, receiver, message_id, chat_id in whispers:
-        if str(m_id) == str(message_id) and str(c_id) == str(chat_id):
-            return (sender_id, receiver, message_id, chat_id) 
+    c.execute('select * from whispers where message_id = %s and chat_id = %s;'
+                (m_id, c_id))
+    return c.fetchone()
 
 def inline_query(bot, update):
     query = update.inline_query.query
@@ -126,8 +146,9 @@ def insert_whisper_temp(sender_id, receiver, message_id, chat_id, file_id):
     to_be_whispers[sender_id] = (receiver, message_id, chat_id, file_id)
 
 def insert_whisper(sender_id, receiver, message_id, chat_id):
-    whispers.append((sender_id, receiver, message_id, chat_id))
-
+    c.execute('insert into whispers values(%s, %s, %s, %s);', (sender_id, receiver, message_id, chat_id))
+    conn.commit()
+    
 def photo(bot, update):
     if update.message.from_user.id not in temp:
         start(bot, update, [])
