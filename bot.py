@@ -35,7 +35,7 @@ to_be_whispers = {}
 whispers = []
 
 def get_whisper(m_id, c_id):
-    c.execute('select * from whispers where message_id = %s and chat_id = %s;'
+    c.execute('select * from whispers where message_id = %s and chat_id = %s;',
                 (m_id, c_id))
     return c.fetchone()
 
