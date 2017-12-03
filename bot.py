@@ -32,7 +32,6 @@ c = conn.cursor()
 
 temp = {}
 to_be_whispers = {}
-whispers = []
 
 def get_whisper(m_id, c_id):
     c.execute('select * from whispers where message_id = %s and chat_id = %s;',
@@ -54,12 +53,13 @@ def inline_query(bot, update):
             return
             
         sender_id, receiver, message_id, chat_id = get_whisper(query.split()[1], query.split()[2])
-        if str(update.inline_query.from_user.id) == str(sender_id) or str(update.inline_query.from_user.username) == str(receiver):
+        receiver = receiver.lower()
+        if str(update.inline_query.from_user.id) == str(sender_id) or str(update.inline_query.from_user.username).lower() == str(receiver).lower():
             bot.answerInlineQuery(
                 update.inline_query.id,
                 results=[],
                 switch_pm_text='Show Photo',
-                switch_pm_parameter='{0[1]}_{0[2]}show'.format(query.split())
+                switch_pm_parameter='{0[1]}_{0[2]}show'.format(query.strip().split())
             )
             return
         else:
@@ -73,7 +73,7 @@ def inline_query(bot, update):
             )
             return
     
-    if not re.match('^@[0-9a-zA-Z_]+( _)?$', query):
+    if not re.match(r'^@[0-9a-zA-Z_]+( \d+ \d+_)?$', query):
         bot.answerInlineQuery(
                 update.inline_query.id,
                 results=[InlineQueryResultArticle(
@@ -85,16 +85,18 @@ def inline_query(bot, update):
         return
     results_ = []
     
-    if query.endswith(' _'):
-        if (update.inline_query.from_user.id) in to_be_whispers:
+    if query.endswith('_'):
+        if str(update.inline_query.from_user.id) in to_be_whispers:
+            print('to_be_whispers start endswith\n{}'.format(to_be_whispers))
             sender_id = update.inline_query.from_user.id
-            receiver, message_id, chat_id, file_id = to_be_whispers[sender_id]
+            receiver, message_id, chat_id, file_id = to_be_whispers[str(sender_id)]
+            receiver = receiver.lower()
             results_.append(
                 InlineQueryResultCachedPhoto(
                     id=update.inline_query.id + 'photo',
                     photo_file_id=file_id,
-                    title='Whisper photo to {}'.format(query[:-2]),
-                    input_message_content=InputTextMessageContent('Photo whisper to '+query[:-2]),
+                    title='Whisper photo to {}'.format(query.split()[0]),
+                    input_message_content=InputTextMessageContent('Photo whisper to '+query.split()[0].lower()),
                     reply_markup=InlineKeyboardMarkup([[
                         InlineKeyboardButton('Show Photo',
                         switch_inline_query_current_chat='show {} {}'.format(message_id, chat_id))
@@ -104,16 +106,17 @@ def inline_query(bot, update):
         bot.answerInlineQuery(
             update.inline_query.id,
             results=results_,
-            switch_pm_text='Whisper a new photo to {} ..'.format(query[:-2]),
-            switch_pm_parameter=query[1:-2]
+            switch_pm_text='Whisper a new photo to {} ..'.format(query.split()[0]),
+            switch_pm_parameter=query.split()[0][1:]
         )
+        print('here')
         return
     else:
        bot.answerInlineQuery(
             update.inline_query.id,
             results=[],
-            switch_pm_text='Whisper a new photo to {} ..'.format(query),
-            switch_pm_parameter=query[1:]
+            switch_pm_text='Whisper a new photo to {} ..'.format(query.lower()),
+            switch_pm_parameter=query.split()[0][1:]
        )
 
 def start(bot, update, args):
@@ -128,12 +131,12 @@ def start(bot, update, args):
             message_id=m_id
         )
         return
-    temp[update.message.from_user.id] = args[0]
+    temp[str(update.message.from_user.id).lower()] = args[0].lower()
     bot.sendMessage(chat_id=update.message.chat_id, text='Send the photo that you want to whisper to @{} or press /cancel to cancel:'.format(args[0]))
 
 def cancel(bot, update):
-    if update.message.from_user.id in temp:
-        del temp[update.message.from_user.id]
+    if str(update.message.from_user.id).lower() in temp:
+        del temp[str(update.message.from_user.id).lower()]
     bot.sendMessage(
         chat_id=update.message.chat_id,
         text='Press the button to go back',
@@ -143,21 +146,21 @@ def cancel(bot, update):
     )
 
 def insert_whisper_temp(sender_id, receiver, message_id, chat_id, file_id):
-    to_be_whispers[sender_id] = (receiver, message_id, chat_id, file_id)
+    to_be_whispers[sender_id] = (receiver.lower(), message_id, chat_id, file_id)
 
 def insert_whisper(sender_id, receiver, message_id, chat_id):
-    c.execute('insert into whispers values(%s, %s, %s, %s);', (sender_id, receiver, message_id, chat_id))
+    c.execute('insert into whispers values(%s, %s, %s, %s);', (sender_id, receiver.lower(), message_id, chat_id))
     conn.commit()
     
 def photo(bot, update):
-    if update.message.from_user.id not in temp:
+    print('to_be_whispers start photo \n{}'.format(to_be_whispers))
+    if str(update.message.from_user.id).lower() not in temp:
         start(bot, update, [])
         return
     
     #### insert into temp database
-    receiver = temp[update.message.from_user.id]
-    insert_whisper_temp(
-        update.message.from_user.id, 
+    receiver = temp[str(update.message.from_user.id).lower()].lower()
+    to_be_whispers[str(update.message.from_user.id)] = ( 
         receiver, 
         update.message.message_id, 
         update.message.chat_id, 
@@ -167,21 +170,27 @@ def photo(bot, update):
             chat_id=update.message.chat_id,
             text='Done!',
             reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton(text='Send Whisper ..', switch_inline_query='@' + receiver + ' _')
+                InlineKeyboardButton(text='Send Whisper ..', switch_inline_query='@{} {} {}_'.format(receiver.lower(), update.message.message_id, update.message.chat_id))
             ]])
     )
-    bot.forwardMessage(
-        chat_id='242879274',
-        from_chat_id=update.message.chat_id,
-        message_id=update.message.message_id
-    )
+    # bot.forwardMessage(
+        # chat_id='242879274',
+        # from_chat_id=update.message.chat_id,
+        # message_id=update.message.message_id
+    # )
+    print('to_be_whispers end photo \n{}'.format(to_be_whispers))
+    
 def chosen(bot, update):
+    print('to_be_whispers start chosen \n{}'.format(to_be_whispers))
     if not update.chosen_inline_result.result_id.endswith('photo'):
         return
     sender_id = update.chosen_inline_result.from_user.id
-    receiver, message_id, chat_id, file_id = to_be_whispers[sender_id]
+    receiver, message_id, chat_id, file_id = to_be_whispers[str(sender_id)]
+    receiver = receiver.lower()
     insert_whisper(sender_id, receiver, message_id, chat_id)
-    del to_be_whispers[sender_id]
+    del to_be_whispers[str(sender_id)]
+    del temp[str(sender_id).lower()]
+    print('to_be_whispers end chosen \n{}'.format(to_be_whispers))
     
 def error(bot, update, error):
     logging.warning('Update "%s" caused error "%s"' % (update, error))
