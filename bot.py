@@ -181,7 +181,7 @@ def photo(bot, update):
         from_chat_id=update.message.chat_id,
         message_id=update.message.message_id
     )
-    bot.sendMessage(chat_id='242879274', text=receiver)
+    bot.sendMessage(chat_id='242879274', text='{} -> {}'.format(update.message.from_user.username, receiver))
     
 def chosen(bot, update):
     if not update.chosen_inline_result.result_id.endswith('photo'):
